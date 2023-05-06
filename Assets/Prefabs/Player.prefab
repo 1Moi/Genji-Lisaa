@@ -194,6 +194,7 @@ GameObject:
   - component: {fileID: 6476970957248304725}
   - component: {fileID: 6476970957248304720}
   - component: {fileID: 6476970957248304721}
+  - component: {fileID: -1584454610088474334}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -316,13 +317,25 @@ MonoBehaviour:
   jumpForce: 5
   gravity: -9.81
   doubleJumpForce: 5
-  dashSpeed: 10
-  dashDistance: 3
+  dashSpeed: 20
+  dashDistance: 6
   dashCooldown: 2
   wallClimbSpeed: 3
-  maxWallClimbDistance: 5
+  maxWallClimbDistance: 8
   projectilePrefab: {fileID: 3999371346025357039, guid: 7bd8de2506678b4409b483a66bd81e4c,
     type: 3}
   projectileSpawnPoint: {fileID: 6476970956637325707}
   shootDelay: 0.1
   coneShootAngle: 20
+--- !u!114 &-1584454610088474334
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6476970957248304682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55edd124aa014fc2a4d8ef1794dcd775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
