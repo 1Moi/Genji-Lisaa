@@ -27,6 +27,12 @@ public class PlayerController : MonoBehaviour
     public float shootDelay = 0.3f;
     public float coneShootAngle = 20f;
     private float lastShootTime;
+    public float primaryShootCooldown = 0.2f;
+    private float lastPrimaryShootTime;
+
+    public LayerMask wallLayer;
+    private bool isClimbingLedge = false;
+    public GameObject ledgeHelper;
 
     private CharacterController controller;
     private Vector3 moveDirection;
@@ -43,10 +49,14 @@ public class PlayerController : MonoBehaviour
 
     private void Shoot()
     {
-        if (Time.time >= lastShootTime + shootDelay)
+        if (Time.time >= lastPrimaryShootTime + primaryShootCooldown)
         {
-            StartCoroutine(ShootRapidly());
-            lastShootTime = Time.time;
+            if (Time.time >= lastShootTime + shootDelay)
+            {
+                StartCoroutine(ShootRapidly());
+                lastShootTime = Time.time;
+            }
+            lastPrimaryShootTime = Time.time;
         }
     }
 
@@ -54,7 +64,9 @@ public class PlayerController : MonoBehaviour
     {
         for (int i = 0; i < 3; i++)
         {
-            Instantiate(projectilePrefab, projectileSpawnPoint.position, projectileSpawnPoint.rotation);
+            GameObject projectileInstance = Instantiate(projectilePrefab, projectileSpawnPoint.position, projectileSpawnPoint.rotation);
+            Rigidbody projectileRigidbody = projectileInstance.GetComponent<Rigidbody>();
+            projectileRigidbody.velocity = playerCamera.transform.forward * projectileInstance.GetComponent<Projectile>().speed;
             yield return new WaitForSeconds(shootDelay);
         }
     }
@@ -62,20 +74,26 @@ public class PlayerController : MonoBehaviour
     private void ShootCone()
     {
         if (Time.time >= lastShootTime + shootDelay)
-        {
+            {
             float offsetAngle = 15f;
 
-            Vector3 forward = projectileSpawnPoint.forward;
-            Vector3 leftDirection = projectileSpawnPoint.TransformDirection(Quaternion.Euler(0, -offsetAngle, 0) * Vector3.forward);
-            Vector3 rightDirection = projectileSpawnPoint.TransformDirection(Quaternion.Euler(0, offsetAngle, 0) * Vector3.forward);
+            Vector3 forward = playerCamera.transform.forward;
+            Vector3 leftDirection = playerCamera.transform.TransformDirection(Quaternion.Euler(0, -offsetAngle, 0) * Vector3.forward);
+            Vector3 rightDirection = playerCamera.transform.TransformDirection(Quaternion.Euler(0, offsetAngle, 0) * Vector3.forward);
 
-            Quaternion leftRotation = Quaternion.LookRotation(leftDirection);
-            Quaternion rightRotation = Quaternion.LookRotation(rightDirection);
+            GameObject leftProjectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
+            GameObject middleProjectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
+            GameObject rightProjectile = Instantiate(projectilePrefab, projectileSpawnPoint.position, Quaternion.identity);
 
-            Instantiate(projectilePrefab, projectileSpawnPoint.position, leftRotation);
-            Instantiate(projectilePrefab, projectileSpawnPoint.position, projectileSpawnPoint.rotation);
-            Instantiate(projectilePrefab, projectileSpawnPoint.position, rightRotation);
+            Rigidbody leftRigidbody = leftProjectile.GetComponent<Rigidbody>();
+            Rigidbody middleRigidbody = middleProjectile.GetComponent<Rigidbody>();
+            Rigidbody rightRigidbody = rightProjectile.GetComponent<Rigidbody>();
 
+            float projectileSpeed = leftProjectile.GetComponent<Projectile>().speed;
+
+            leftRigidbody.velocity = leftDirection * projectileSpeed;
+            middleRigidbody.velocity = forward * projectileSpeed;
+            rightRigidbody.velocity = rightDirection * projectileSpeed;
             lastShootTime = Time.time;
         }
     }
@@ -169,6 +187,12 @@ public class PlayerController : MonoBehaviour
             gravity = 0;
             moveDirection.y = wallClimbSpeed;
             wallClimbDistance += wallClimbSpeed * Time.deltaTime;
+
+            RaycastHit ceilingHit;
+            if (Physics.Raycast(transform.position, Vector3.up, out ceilingHit, 1f))
+            {
+                moveDirection += Vector3.up * 0.2f;
+            }
         }
         else
         {
@@ -176,6 +200,15 @@ public class PlayerController : MonoBehaviour
             if (isGrounded)
             {
                 wallClimbDistance = 0;
+            }
+        }
+
+        RaycastHit ledgeHit;
+        if (Physics.Raycast(transform.position + Vector3.up, transform.forward, out ledgeHit, 1.5f))
+        {
+            if (!Physics.Raycast(ledgeHit.point + Vector3.up * 0.3f, -Vector3.up, 0.5f))
+            {
+                moveDirection.y = wallClimbSpeed;
             }
         }
 
@@ -188,5 +221,20 @@ public class PlayerController : MonoBehaviour
         {
             ShootCone();
         }
+    }
+
+    private void OnEnable()
+    {
+        Target.OnTargetDestroyed += ResetDashCooldown;
+    }
+
+    private void OnDisable()
+    {
+        Target.OnTargetDestroyed -= ResetDashCooldown;
+    }
+
+    private void ResetDashCooldown()
+    {
+        lastDashTime = Time.time - dashCooldown;
     }
 }
